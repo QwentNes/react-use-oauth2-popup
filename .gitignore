@@ -1,0 +1,28 @@
+# Next.js
+.next/
+node_modules/
+
+.idea
+# Parcel
+.cache/
+
+# package
+*.tgz
+
+# VSCode
+.vscode/
+
+# Compile
+dist/
+
+# microbundle
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# yarn
+package-lock.json
+
+# Jest
+coverage/
+/test/
