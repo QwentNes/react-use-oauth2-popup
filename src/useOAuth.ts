@@ -2,14 +2,14 @@ import { useEffect, useRef, useState } from 'react'
 import createPopup from './lib/createPopup'
 import { useOAuthClient } from './OAuthProvider'
 import {
+  AuthEvents,
   Method,
   PopupEventResponse,
-  PopupEvents,
   Provider,
   UseOAuthReturnType
 } from './types'
 
-export function useOAuth(method: Method, events?: PopupEvents): UseOAuthReturnType {
+export function useOAuth(method: Method, events?: AuthEvents): UseOAuthReturnType {
   const popupRef = useRef<Window | null>(null)
   const [variant, setVariant] = useState<Provider | null>(null)
   const { createPopupParams } = useOAuthClient()

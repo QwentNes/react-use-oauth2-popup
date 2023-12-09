@@ -14,12 +14,15 @@ export type OAuthContextProvider = (props: {
 
 type OAuthTemplates = typeof templates
 
-export type OAuthParamsConfig<
-  T = {
-    redirectUri: RedirectUriParams
-    providers: ProvidersParams
-  }
-> = ((templates: OAuthTemplates) => T) | T
+export type OAuthParamsConfig =
+  | ((templates: OAuthTemplates) => {
+      redirectUri: RedirectUriParams | string
+      providers: ProvidersParams
+    })
+  | {
+      redirectUri: RedirectUriParams | string
+      providers: ProvidersParams
+    }
 
 export type ProvidersParams = Record<Provider, ProviderParams>
 
@@ -60,9 +63,9 @@ export type PopupViewParams = Partial<{
       }
 }>
 
-export type PopupEvents = Partial<{
-  onError: (error: PopupError) => void
+export type AuthEvents = Partial<{
   onSuccess: (response: PopupSuccess) => Promise<void> | void
+  onError: (error: PopupError) => void
   onOpen: () => void
   onClose: () => void
 }>
@@ -73,18 +76,18 @@ export type UseOAuthReturnType = {
   isInProcess: boolean
 }
 
-export type MethodsHandlersCallback = (config: {
+export type MethodHandler = (config: {
   method: Method
   provider: Provider
-  params: UrlQueryParams
+  credentials: UrlQueryParams
 }) => Promise<unknown>
 
-export type MethodsHandlers =
+export type MethodHandlers =
   | {
-      [key in Method]: MethodsHandlersCallback
+      [key in Method]: MethodHandler
     }
-  | ({ [key in Method]?: MethodsHandlersCallback } & {
-      default: MethodsHandlersCallback
+  | ({ [key in Method]?: MethodHandler } & {
+      default: MethodHandler
     })
 
 export type UrlNamedParams = {
@@ -93,7 +96,7 @@ export type UrlNamedParams = {
 }
 
 export type UrlQueryParams = {
-  from: 'hash' | 'searchParams'
+  from: 'hash' | 'query'
   state: string
 } & Record<string, string>
 
@@ -109,10 +112,8 @@ export type PopupEventResponse = { source: 'oauth-popup' } & (
 )
 
 export type PopupSuccess<S = unknown> = {
-  data: {
-    popup: UrlQueryParams
-    callback?: S
-  }
+  conditionals: UrlQueryParams
+  data?: S
 } & UrlNamedParams
 
 export type PopupError<E = unknown> = {
@@ -120,7 +121,7 @@ export type PopupError<E = unknown> = {
   error?: E
 } & Partial<UrlNamedParams>
 
-export { CustomTypesOptions } from './options'
+export { CustomTypeOptions } from './options'
 
 export {
   DiscordArgs,

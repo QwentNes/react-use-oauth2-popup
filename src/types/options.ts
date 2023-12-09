@@ -1,6 +1,6 @@
 import { MergeTypes } from './helpers'
 
-export interface CustomTypesOptions {}
+export interface CustomTypeOptions {}
 
 export type OAuthHookTypes = MergeTypes<
   {
@@ -22,5 +22,5 @@ export type OAuthHookTypes = MergeTypes<
      */
     method: string
   },
-  CustomTypesOptions
+  CustomTypeOptions
 >

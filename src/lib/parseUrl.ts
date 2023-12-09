@@ -39,7 +39,7 @@ const parseUrl = (urlValue: string, urlPattern: string) => {
       params['from'] = 'hash'
       source = new URLSearchParams(hash())
     } else {
-      params['from'] = 'searchParams'
+      params['from'] = 'query'
       source = urlBase.searchParams
     }
 

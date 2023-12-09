@@ -7,17 +7,9 @@ import {
 } from './constants/errors'
 import parseUrl from './lib/parseUrl'
 import { useOAuthClient } from './OAuthProvider'
-import {
-  Method,
-  MethodsHandlers,
-  MethodsHandlersCallback,
-  PopupError,
-  PopupSuccess
-} from './types'
+import { Method, MethodHandler, MethodHandlers, PopupError, PopupSuccess } from './types'
 
-function useOAuthPage(handlers: MethodsHandlersCallback): void
-function useOAuthPage(handlers: MethodsHandlers): void
-function useOAuthPage(handlers: MethodsHandlersCallback | MethodsHandlers): void {
+function useOAuthPopup(handlers: MethodHandler | MethodHandlers): void {
   const { getProviderNames, getRedirectUrlPattern } = useOAuthClient()
 
   function getCallback(method: Method) {
@@ -75,15 +67,13 @@ function useOAuthPage(handlers: MethodsHandlersCallback | MethodsHandlers): void
       checkParams(params)
       const { provider, method } = params.namedParams
 
-      getCallback(method)?.({ method, provider, params: params.queryParams })
+      getCallback(method)?.({ method, provider, credentials: params.queryParams })
         .then((data) =>
           sendResponse({
-            data: {
-              callback: data,
-              popup: params.queryParams
-            },
+            conditionals: params.queryParams,
             provider,
-            method
+            method,
+            data
           })
         )
         .catch((error) =>
@@ -104,4 +94,4 @@ function useOAuthPage(handlers: MethodsHandlersCallback | MethodsHandlers): void
   }, [])
 }
 
-export { useOAuthPage }
+export { useOAuthPopup }

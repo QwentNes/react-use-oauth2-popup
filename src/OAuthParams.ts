@@ -16,13 +16,13 @@ export class OAuthParams {
   constructor(params: OAuthParamsConfig) {
     const { providers, redirectUri } =
       typeof params === 'function' ? params(templates) : params
-
+    this.#redirectUri =
+      typeof redirectUri === 'string' ? { pathname: redirectUri } : redirectUri
     this.#providers = providers
-    this.#redirectUri = redirectUri
   }
 
   createState = () => {
-    return uuid_v4().replace('-', '')
+    return uuid_v4()
   }
 
   getRedirectUrlPattern = () => {
