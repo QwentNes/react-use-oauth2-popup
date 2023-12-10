@@ -7,20 +7,31 @@ import {
 } from './constants/errors'
 import parseUrl from './lib/parseUrl'
 import { useOAuthClient } from './OAuthProvider'
-import { Method, MethodHandler, MethodHandlers, PopupError, PopupSuccess } from './types'
+import {
+  HandlerData,
+  Method,
+  MethodHandler,
+  MethodHandlers,
+  PopupError,
+  PopupSuccess
+} from './types'
 
-function useOAuthPopup(handlers: MethodHandler | MethodHandlers): void {
+function useOAuthPopup(handlers: MethodHandlers): void {
   const { getProviderNames, getRedirectUrlPattern } = useOAuthClient()
 
   function getCallback(method: Method) {
-    const callback =
-      typeof handlers === 'object' ? handlers[method] || handlers['default'] : handlers
+    let callback: MethodHandler
+    if (typeof handlers === 'object') {
+      callback = handlers[method] || handlers['default']
+    } else {
+      callback = handlers
+    }
 
     if (!callback) {
       throw CallbackNotFound
     }
 
-    return callback
+    return (config: HandlerData) => Promise.resolve(callback(config))
   }
 
   function getParamsFromUrl() {

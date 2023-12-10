@@ -71,24 +71,25 @@ export type AuthEvents = Partial<{
 }>
 
 export type UseOAuthReturnType = {
-  active: Provider | null
   openPopup: (provider: Provider) => () => void
+  activeProvider: Provider | null
   isInProcess: boolean
 }
 
-export type MethodHandler = (config: {
-  method: Method
-  provider: Provider
-  credentials: UrlQueryParams
-}) => Promise<unknown>
+export type MethodHandler = (data: HandlerData) => Promise<unknown> | unknown
 
 export type MethodHandlers =
+  | MethodHandler
   | {
       [key in Method]: MethodHandler
     }
   | ({ [key in Method]?: MethodHandler } & {
       default: MethodHandler
     })
+
+export type HandlerData = {
+  credentials: UrlQueryParams
+} & UrlNamedParams
 
 export type UrlNamedParams = {
   provider: Provider

@@ -88,6 +88,6 @@ export function useOAuth(method: Method, events?: AuthEvents): UseOAuthReturnTyp
   return {
     openPopup,
     isInProcess: !!variant,
-    active: variant
+    activeProvider: variant
   }
 }

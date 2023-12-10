@@ -218,11 +218,11 @@ const Popup = () => {
 
 ### Options:
 
-* `handlers: ((data: TData) => Promise<unknown>) | Record<string, (data: TData) => Promise<unknown>>`
+* `handlers: Record<string, (data: { method: string, provider: string, credentials: Record<string, string> }) => Promise<unknown> | unknown>`
+* `handlers: (data: { method: string, provider: string, credentials: Record<string, string> }) => Promise<unknown> | unknown`
 	* **Required**
-  * `TData = { method: string, provider: string, credentials: Record<string, string> }`
-    * If `multiple` handlers
-      * You can specify a `default` handler that will be called if there is no handler for a specific method
+  * Use it to send `creditionals` to the backend of the application
+  * If `multiple` handlers, then you can specify a `default` handler that will be called if there is no handler for a specific method
 
 ### Example: 
 ```jsx 
@@ -237,12 +237,12 @@ const Popup = () => {
       })
       return res.json()
     },
-    default: async () => {
+    default: () => {
       //code...
     }
   })
   // or
-  useOAuthPopup(async () => {
+  useOAuthPopup(() => {
 	// code...    
   })
 	
