@@ -28,3 +28,12 @@ export type GitHubArgs = {
   allow_signup?: boolean
   prompt?: 'none' | 'select_account'
 }
+
+export type MicrosoftArgs = {
+  login_hint?: string
+  code_challenge?: string
+  tenant: 'common' | 'organizations' | 'consumers'
+  prompt?: 'login' | 'none' | 'consent' | 'select_account'
+  response_mode: 'query' | 'fragment' | 'form_post'
+  code_challenge_method?: 'S256' | 'plain'
+}
