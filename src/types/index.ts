@@ -16,26 +16,22 @@ type OAuthTemplates = typeof templates
 
 export type OAuthParamsConfig =
   | ((templates: OAuthTemplates) => {
-      redirectUri: RedirectUriParams | string
+      redirectUri: string
       providers: ProvidersParams
     })
   | {
-      redirectUri: RedirectUriParams | string
+      redirectUri: string
       providers: ProvidersParams
     }
 
 export type ProvidersParams = Record<Provider, ProviderParams>
+export type RedirectUrlFn = (provider: Provider, method: Method) => void
 
 export type ProviderParams = {
   url:
     | ((redirect_uri: string, state: string) => string)
     | (Omit<OAuthReqParams, 'state' | 'redirect_uri'> & { base_path: string })
   popup?: PopupViewParams
-}
-
-export type RedirectUriParams = {
-  pathname: string
-  origin?: string
 }
 
 export type OAuthReqParams = {
@@ -52,28 +48,22 @@ export type PopupParams = {
   title: string
 } & PopupViewParams
 
-export type PopupViewParams = Partial<{
-  width: number
-  height: number
+export type PopupViewParams = {
+  width?: number
+  height?: number
   position?:
     | 'center'
     | {
         topOffset?: number
         leftOffset?: number
       }
-}>
+}
 
-export type AuthEvents = Partial<{
+export type AuthEventHandlers = {
   onSuccess: (response: PopupSuccess) => Promise<void> | void
   onError: (error: PopupError) => void
-  onOpen: () => void
+  onOpen: (provider: Provider) => void
   onClose: () => void
-}>
-
-export type UseOAuthReturnType = {
-  openPopup: (provider: Provider) => () => void
-  activeProvider: Provider | null
-  isInProcess: boolean
 }
 
 export type MethodHandler = (data: HandlerData) => Promise<unknown> | unknown
@@ -91,6 +81,11 @@ export type HandlerData = {
   credentials: UrlQueryParams
 } & UrlNamedParams
 
+export type PopupConfig = {
+  directAccessHandler: () => void
+  delayClose: number
+}
+
 export type UrlNamedParams = {
   provider: Provider
   method: Method
@@ -101,26 +96,28 @@ export type UrlQueryParams = {
   state: string
 } & Record<string, string>
 
+export type PopupPayload = PopupSuccess | PopupError
+
 export type PopupEventResponse = { source: 'oauth-popup' } & (
   | {
       result: 'success'
-      payload: PopupSuccess
+      payload: PopupSuccess & UrlNamedParams
     }
   | {
       result: 'error'
-      payload: PopupError
+      payload: PopupError & Partial<UrlNamedParams>
     }
 )
 
-export type PopupSuccess<S = unknown> = {
-  conditionals: UrlQueryParams
-  data?: S
-} & UrlNamedParams
+export type PopupSuccess = {
+  credentials: UrlQueryParams
+  data?: unknown
+}
 
-export type PopupError<E = unknown> = {
+export type PopupError = {
   errorCode: string
-  error?: E
-} & Partial<UrlNamedParams>
+  error?: object
+}
 
 export { CustomTypeOptions } from './options'
 
@@ -130,5 +127,6 @@ export {
   GoogleArgs,
   TwitchArgs,
   VkontakteArgs,
-  TemplateArgs
+  TemplateArgs,
+  MicrosoftArgs
 } from './templates'

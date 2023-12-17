@@ -4,11 +4,11 @@ import { OAuthContextProvider } from './types'
 
 const OAuthParamsContext = createContext<OAuthParams | undefined>(undefined)
 
-export const useOAuthClient = () => {
+export const useOAuthContext = () => {
   const client = useContext(OAuthParamsContext)
 
   if (!client) {
-    throw new Error('No OAuthClient set, use OAuthProvider to set one')
+    throw new Error('No OAuthParams set, use OAuthProvider to set one')
   }
 
   return client!

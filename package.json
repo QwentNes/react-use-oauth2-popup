@@ -1,6 +1,6 @@
 {
   "name": "react-use-oauth2-popup",
-  "version": "0.1.3",
+  "version": "0.2.1",
   "description": "Simplifies working with OAuth2 for react application",
   "main": "dist/react-use-oauth2-popup.js",
   "module": "dist/react-use-oauth2-popup.esm.js",
@@ -8,11 +8,12 @@
   "types": "dist/index.d.ts",
   "source": "./src/index.ts",
   "keywords": [
-    "oauth",
     "react",
+    "OAuth2",
     "popup",
-    "oauth-popup",
-    "react-oauth2-popup"
+    "OAuth2-popup",
+    "OAuth2-react",
+    "use-react-oauth2-popup"
   ],
   "author": "QwentNes",
   "license": "MIT",

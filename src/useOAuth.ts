@@ -1,93 +1,108 @@
 import { useEffect, useRef, useState } from 'react'
 import createPopup from './lib/createPopup'
-import { useOAuthClient } from './OAuthProvider'
+import { useOAuthContext } from './OAuthProvider'
 import {
-  AuthEvents,
+  AuthEventHandlers,
   Method,
   PopupEventResponse,
-  Provider,
-  UseOAuthReturnType
+  PopupViewParams,
+  Provider
 } from './types'
 
-export function useOAuth(method: Method, events?: AuthEvents): UseOAuthReturnType {
+export function useOAuth(method: Method, events?: Partial<AuthEventHandlers>) {
   const popupRef = useRef<Window | null>(null)
-  const [variant, setVariant] = useState<Provider | null>(null)
-  const { createPopupParams } = useOAuthClient()
+  const { createWindowParams, generateString } = useOAuthContext()
+  const { onOpen, onClose, onSuccess, onError } = getEventHandlers()
+  const [activeProvider, setActiveProvider] = useState<Provider | null>(null)
+  function getEventHandlers(): AuthEventHandlers {
+    const resetPopupRef = () => {
+      popupRef.current?.close()
+      popupRef.current = null
+    }
+
+    return {
+      onSuccess(response) {
+        resetPopupRef()
+        events?.onClose?.()
+        Promise.resolve(events?.onSuccess?.(response)).finally(() => {
+          setActiveProvider(null)
+        })
+      },
+      onError(error) {
+        resetPopupRef()
+        events?.onError?.(error)
+      },
+      onOpen(provider) {
+        setActiveProvider(provider)
+        events?.onOpen?.(provider)
+      },
+      onClose() {
+        resetPopupRef()
+        setActiveProvider(null)
+        events?.onClose?.()
+      }
+    }
+  }
+
+  function generateState() {
+    const randomString = generateString()
+    window.localStorage.setItem('oauth-state', randomString)
+
+    return randomString
+  }
+
+  function openPopup(provider: Provider, popupParams?: PopupViewParams) {
+    return () => {
+      if (popupRef.current || activeProvider) {
+        return popupRef.current?.focus()
+      }
+
+      const params = createWindowParams(generateState(), provider, method, popupParams)
+      popupRef.current = createPopup(params)
+      onOpen(provider)
+    }
+  }
+
+  function closePopup() {
+    if (popupRef.current && !popupRef.current?.closed) {
+      onClose()
+    }
+  }
 
   useEffect(() => {
-    if (!popupRef?.current || popupRef.current?.closed) return
+    if (!popupRef.current || popupRef.current?.closed) return
 
     const checkInterval = setInterval(() => {
+      console.log('tick')
       if (popupRef.current?.closed) {
-        setVariant(null)
-        events?.onClose?.()
-        popupRef.current = null
+        onClose()
       }
     }, 400)
 
     return () => {
       clearInterval(checkInterval)
     }
-  }, [variant])
-
-  const openPopup = (provider: Provider) => () => {
-    if (variant) {
-      popupRef.current?.focus()
-      return
-    }
-
-    const { state, ...popupParams } = createPopupParams(provider, method)
-    window.localStorage.setItem('oauth-state', state)
-
-    popupRef.current = createPopup(popupParams)
-    setVariant(provider)
-    events?.onOpen?.()
-  }
-
-  const messageHandler = async ({ data }: MessageEvent) => {
-    const _data: PopupEventResponse = data
-    if (_data?.source !== 'oauth-popup') return
-
-    switch (_data.result) {
-      case 'success':
-        if (events?.onSuccess) {
-          const _ref = popupRef.current
-          popupRef.current = null
-          _ref?.close()
-          events?.onClose?.()
-          Promise.resolve(events.onSuccess(_data.payload)).finally(() => {
-            popupRef.current = _ref
-            setVariant(null)
-          })
-          return
-        }
-        closePopup()
-        break
-      case 'error':
-        events?.onError?.(_data.payload)
-        closePopup()
-    }
-  }
-
-  const closePopup = () => {
-    if (!popupRef.current?.closed) {
-      popupRef.current?.close()
-      events?.onClose?.()
-    }
-    setVariant(null)
-  }
+  }, [activeProvider])
 
   useEffect(() => {
+    //@ts-ignore (microbundle not support generic in "MessageEvent")
+    function messageHandler({ data }: MessageEvent<PopupEventResponse>) {
+      const { result, payload, source } = data || {}
+      if (source === 'oauth-popup') {
+        result === 'success' ? onSuccess(payload) : onError(payload)
+      }
+    }
+
     window.addEventListener('message', messageHandler, false)
     return () => {
       window.removeEventListener('message', messageHandler)
-      popupRef.current?.close?.()
+      closePopup()
     }
   }, [])
 
   return {
+    closePopup,
     openPopup,
-    isInProcess: !!variant,
-    activeProvider: variant
+    activeProvider
   }
 }

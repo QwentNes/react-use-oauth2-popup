@@ -7,8 +7,16 @@ const parseUrl = (urlValue: string, urlPattern: string) => {
     return urlBase.hash.substring(1)
   }
 
+  function pathname() {
+    return urlBase.pathname
+  }
+
+  function searchParams() {
+    return urlBase.searchParams
+  }
+
   function namedParams() {
-    const allPathName = pathNames()
+    const allPathName = getPathNames(pathname())
     const allNamedParamsKeys = namedParamsWithIndex()
 
     return allNamedParamsKeys.reduce<Record<string, string>>((values, paramKey) => {
@@ -35,12 +43,12 @@ const parseUrl = (urlValue: string, urlPattern: string) => {
     const params: Record<string, string> = {}
     let source: URLSearchParams
 
-    if (!(urlBase.searchParams as any).size) {
+    if (!(searchParams() as any).size) {
       params['from'] = 'hash'
       source = new URLSearchParams(hash())
     } else {
       params['from'] = 'query'
-      source = urlBase.searchParams
+      source = searchParams()
     }
 
     source.forEach((value, key) => {
@@ -60,10 +68,6 @@ const parseUrl = (urlValue: string, urlPattern: string) => {
     }
 
     return pathName.split('/')
-  }
-
-  function pathNames() {
-    return getPathNames(urlBase.pathname)
   }
 
   return Object.freeze({

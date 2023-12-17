@@ -1,54 +1,41 @@
 import { v4 as uuid_v4 } from 'uuid'
 import templates from './constants/templates'
 import createOAuthUrl from './lib/createOAuthUrl'
+import createRedirectUrl from './lib/createRedirectUrl'
 import {
   Method,
   OAuthParamsConfig,
+  PopupViewParams,
   Provider,
-  ProvidersParams,
-  RedirectUriParams
+  ProvidersParams
 } from './types'
 
 export class OAuthParams {
   readonly #providers: ProvidersParams
-  readonly #redirectUri: RedirectUriParams
+  readonly #redirectUri: string
 
   constructor(params: OAuthParamsConfig) {
     const { providers, redirectUri } =
       typeof params === 'function' ? params(templates) : params
-    this.#redirectUri =
-      typeof redirectUri === 'string' ? { pathname: redirectUri } : redirectUri
+    this.#redirectUri = redirectUri
     this.#providers = providers
   }
 
-  createState = () => {
-    return uuid_v4()
-  }
-
   getRedirectUrlPattern = () => {
-    return this.#redirectUri.pathname
+    return this.#redirectUri
   }
 
-  getProviderNames = () => {
-    return Object.keys(this.#providers)
+  generateString = () => {
+    return uuid_v4().replace(/-/g, '')
   }
 
   getProvider = (provider: Provider) => {
     const data = this.#providers[provider]
-
     if (!data) {
       throw new Error(`Provider ${provider} not found`)
     }
-    return data
-  }
 
-  createRedirectUrl = (provider: Provider, method: Method) => {
-    const { origin, pathname } = this.#redirectUri
-    const baseUrl = origin || window.location.origin
-    return new URL(
-      pathname.replace(':provider', provider).replace(':method', method),
-      baseUrl
-    ).href
+    return data
   }
 
   getOAuthUrlFn = (provider: Provider) => {
@@ -57,7 +44,6 @@ export class OAuthParams {
     if (typeof url === 'function') {
       return url
     }
-
     const { base_path, ...urlParams } = url
 
     return (redirect_uri: string, state: string) =>
@@ -68,15 +54,22 @@ export class OAuthParams {
       })
   }
 
-  createPopupParams = (provider: Provider, method: Method) => {
+  createWindowParams = (
+    state: string,
+    provider: Provider,
+    method: Method,
+    popupParams?: PopupViewParams
+  ) => {
     const { popup } = this.getProvider(provider)
-    const state = this.createState()
+    const redirectUrl = createRedirectUrl(this.getRedirectUrlPattern(), provider, method)
 
     return {
       title: `external_${method}`,
-      url: this.getOAuthUrlFn(provider)(this.createRedirectUrl(provider, method), state),
-      popup,
-      state
+      url: this.getOAuthUrlFn(provider)(redirectUrl, state),
+      popup: {
+        ...popup,
+        ...popupParams
+      }
     }
   }
 }
