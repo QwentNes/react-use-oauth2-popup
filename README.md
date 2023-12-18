@@ -18,6 +18,7 @@ First, you need to create configurations for OAuth2 using `OAuthParams` and pass
 
 ```jsx
 import { OAuthParams, OAuthProvider } from 'react-use-oauth2-popup'
+import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 
 const params = new OAuthParams({
   redirectUri: 'external/:provider/:method',
@@ -43,10 +44,21 @@ const params = new OAuthParams({
   },
 })
 
-const App = ({children}) => {
+const router = createBrowserRouter([
+  {
+    path: '/login',
+    element: <LoginPage />
+  },
+  {
+    path: 'external/:provider/:method',
+    element: <PopupPage />
+  }
+])
+
+const App = () => {
   return (
     <OAuthProvider params={params}>
-      {children}
+      <RouterProvider router={router} />
     </OAuthProvider>
   )
 }
@@ -167,7 +179,7 @@ const {
     * `onError?: ({ provider: string, method: string, errorCode: string, error?: TError }) => void`
       * Optional
       * This function will fire when an error occurs during the process
-      * `error` not empty only if the error was returned by the handler from the `useOAuthPopup` hook
+      * The `error` is not empty only if the error was returned by the handler from the `useOAuthPopup` hook or if the provider returned an error.
       * `errorCode` will be
         * ***State Mismatch*** - The state value returned after receiving the credentials does not match
         * ***Callback Error*** - The function passed to process the method in the `useOAuthPopup` hook failed with an error

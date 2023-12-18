@@ -73,7 +73,6 @@ export function useOAuth(method: Method, events?: Partial<AuthEventHandlers>) {
     if (!popupRef.current || popupRef.current?.closed) return
 
     const checkInterval = setInterval(() => {
-      console.log('tick')
       if (popupRef.current?.closed) {
         onClose()
       }

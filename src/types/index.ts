@@ -25,7 +25,6 @@ export type OAuthParamsConfig =
     }
 
 export type ProvidersParams = Record<Provider, ProviderParams>
-export type RedirectUrlFn = (provider: Provider, method: Method) => void
 
 export type ProviderParams = {
   url:
