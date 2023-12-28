@@ -1,79 +1,79 @@
-import { UrlNamedParams, UrlQueryParams } from '../types'
+import { UrlNamedParams, UrlQueryParams } from '../types';
 
 const parseUrl = (urlValue: string, urlPattern: string) => {
-  const urlBase = new URL(urlValue)
+   const urlBase = new URL(urlValue);
 
-  function hash() {
-    return urlBase.hash.substring(1)
-  }
+   function hash() {
+      return urlBase.hash.substring(1);
+   }
 
-  function pathname() {
-    return urlBase.pathname
-  }
+   function pathname() {
+      return urlBase.pathname;
+   }
 
-  function searchParams() {
-    return urlBase.searchParams
-  }
+   function searchParams() {
+      return urlBase.searchParams;
+   }
 
-  function namedParams() {
-    const allPathName = getPathNames(pathname())
-    const allNamedParamsKeys = namedParamsWithIndex()
+   function namedParams() {
+      const allPathName = getPathNames(pathname());
+      const allNamedParamsKeys = namedParamsWithIndex();
 
-    return allNamedParamsKeys.reduce<Record<string, string>>((values, paramKey) => {
-      values[paramKey.value] = allPathName[paramKey.index]
-      return values
-    }, {})
-  }
+      return allNamedParamsKeys.reduce<Record<string, string>>((values, paramKey) => {
+         values[paramKey.value] = allPathName[paramKey.index];
+         return values;
+      }, {});
+   }
 
-  function namedParamsWithIndex() {
-    const namedUrlParams = getPathNames(urlPattern)
+   function namedParamsWithIndex() {
+      const namedUrlParams = getPathNames(urlPattern);
 
-    return namedUrlParams.reduce<{ value: string; index: number }[]>(
-      (validParams, param, index) => {
-        if (param[0] === ':') {
-          validParams.push({ value: param.slice(1), index })
-        }
-        return validParams
-      },
-      []
-    )
-  }
+      return namedUrlParams.reduce<{ value: string; index: number }[]>(
+         (validParams, param, index) => {
+            if (param[0] === ':') {
+               validParams.push({ value: param.slice(1), index });
+            }
+            return validParams;
+         },
+         []
+      );
+   }
 
-  function queryParams() {
-    const params: Record<string, string> = {}
-    let source: URLSearchParams
+   function queryParams() {
+      const params: Record<string, string> = {};
+      let source: URLSearchParams;
 
-    if (!(searchParams() as any).size) {
-      params['from'] = 'hash'
-      source = new URLSearchParams(hash())
-    } else {
-      params['from'] = 'query'
-      source = searchParams()
-    }
+      if (!(searchParams() as any).size) {
+         params['from'] = 'hash';
+         source = new URLSearchParams(hash());
+      } else {
+         params['from'] = 'query';
+         source = searchParams();
+      }
 
-    source.forEach((value, key) => {
-      params[key] = value
-    })
+      source.forEach((value, key) => {
+         params[key] = value;
+      });
 
-    return params
-  }
+      return params;
+   }
 
-  function getPathNames(pathName: string) {
-    if (pathName === '/' || pathName.trim().length === 0) return [pathName]
-    if (pathName.slice(-1) === '/') {
-      pathName = pathName.slice(0, -1)
-    }
-    if (pathName[0] === '/') {
-      pathName = pathName.slice(1)
-    }
+   function getPathNames(pathName: string) {
+      if (pathName === '/' || pathName.trim().length === 0) return [pathName];
+      if (pathName.slice(-1) === '/') {
+         pathName = pathName.slice(0, -1);
+      }
+      if (pathName[0] === '/') {
+         pathName = pathName.slice(1);
+      }
 
-    return pathName.split('/')
-  }
+      return pathName.split('/');
+   }
 
-  return Object.freeze({
-    namedParams: namedParams() as UrlNamedParams,
-    queryParams: queryParams() as UrlQueryParams
-  })
-}
+   return Object.freeze({
+      namedParams: namedParams() as UrlNamedParams,
+      queryParams: queryParams() as UrlQueryParams
+   });
+};
 
-export default parseUrl
+export default parseUrl;

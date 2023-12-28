@@ -286,7 +286,7 @@ const {
 ```jsx 
 import { useOAuthPopup } from 'react-use-oauth2-popup'
 
-const Popup = () => {
+const PopupPage = () => {
   const { isRunning, isSuccess, isError } = useOAuthPopup({
     login: async ({ credentials }) => {
       const res = await fetch('example.com/login', {

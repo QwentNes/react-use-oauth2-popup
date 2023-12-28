@@ -18,8 +18,10 @@
   "author": "QwentNes",
   "license": "MIT",
   "scripts": {
-    "build:prod": "microbundle --define process.env.NODE_ENV=production --sourcemap false --jsx React.createElement --output dist --tsconfig ./tsconfig.json",
-    "build:dev": "microbundle watch --define process.env.NODE_ENV=development --sourcemap true --jsx React.createElement --output dist --tsconfig ./tsconfig.json"
+    "build:prod": "microbundle --sourcemap false --jsx React.createElement --output dist --tsconfig ./tsconfig.json",
+    "build:dev": "microbundle watch --sourcemap true --jsx React.createElement --output dist --tsconfig ./tsconfig.json",
+    "lint": "eslint ./src --fix",
+    "test": "jest"
   },
   "peerDependencies": {
     "react": "18.2.0",
@@ -30,11 +32,16 @@
     "@types/react": "^18.2.33",
     "@types/react-dom": "^18.2.14",
     "@types/uuid": "^9.0.7",
+    "@typescript-eslint/eslint-plugin": "^6.16.0",
+    "@typescript-eslint/parser": "^6.16.0",
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.1.2",
+    "eslint-plugin-react": "^7.33.2",
     "microbundle": "^0.12.3",
     "prettier": "^3.0.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "tslint": "^6.1.3",
     "typescript": "^5.2.2"
   },
   "repository": {
