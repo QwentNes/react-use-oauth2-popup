@@ -11,7 +11,7 @@ export const useOAuthContext = () => {
       throw new Error('No OAuthParams set, use OAuthProvider to set one');
    }
 
-   return client!;
+   return client;
 };
 
 export const OAuthProvider: OAuthContextProvider = ({ children, params }) => {

@@ -1,14 +1,16 @@
 {
   "compilerOptions": {
-    "allowJs": false,
+    "allowJs": true,
     "target": "es6",
     "allowSyntheticDefaultImports": true,
     "moduleResolution": "node",
     "outDir": "dist",
     "experimentalDecorators": true,
     "jsx": "react",
-    "lib": ["DOM", "dom.iterable", "es2017"],
+    "lib": ["dom", "esnext"],
     "noUnusedLocals": true,
+    "module": "esnext",
+    "esModuleInterop": true,
     "noUnusedParameters": true,
     "preserveConstEnums": true,
     "removeComments": false,

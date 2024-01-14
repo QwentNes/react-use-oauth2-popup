@@ -9,13 +9,16 @@ import {
    Provider
 } from './types';
 
-export function useOAuth(method: Method, events?: Partial<AuthEventHandlers>) {
+export function useOAuth<D = unknown, E = unknown>(
+   method: Method,
+   events?: Partial<AuthEventHandlers<D, E>>
+) {
    const popupRef = useRef<Window | null>(null);
    const { createWindowParams, generateString } = useOAuthContext();
    const { onOpen, onClose, onSuccess, onError } = getEventHandlers();
    const [activeProvider, setActiveProvider] = useState<Provider | null>(null);
 
-   function getEventHandlers(): AuthEventHandlers {
+   function getEventHandlers(): AuthEventHandlers<D, E> {
       function resetPopupRef() {
          popupRef.current?.close();
          popupRef.current = null;
@@ -91,7 +94,7 @@ export function useOAuth(method: Method, events?: Partial<AuthEventHandlers>) {
 
    useEffect(() => {
       //@ts-ignore (generic error microbundle)
-      function messageHandler({ data }: MessageEvent<PopupEventResponse>) {
+      function messageHandler({ data }: MessageEvent<PopupEventResponse<D, E>>) {
          const { result, payload, source } = data || {};
          if (source === 'oauth-popup') {
             result === 'success' ? onSuccess(payload) : onError(payload);

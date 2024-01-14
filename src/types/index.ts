@@ -3,6 +3,7 @@ import templates from '../constants/templates';
 import { OAuthParams } from '../OAuthParams';
 import { PreservedValue } from './helpers';
 import { OAuthHookTypes } from './options';
+import * as errors from '../constants/errors';
 
 export type Provider = PreservedValue<OAuthHookTypes['provider'], string>;
 export type Method = PreservedValue<OAuthHookTypes['method'], string>;
@@ -58,9 +59,9 @@ export type PopupViewParams = {
         };
 };
 
-export type AuthEventHandlers = {
-   onSuccess: (response: PopupSuccess) => Promise<void> | void;
-   onError: (error: PopupError) => void;
+export type AuthEventHandlers<D = unknown, E = unknown> = {
+   onSuccess: (response: PopupSuccess<D>) => Promise<void> | void;
+   onError: (error: PopupError<E>) => void;
    onOpen: (provider: Provider) => void;
    onClose: () => void;
 };
@@ -106,15 +107,32 @@ export type PopupEventResponse = { source: 'oauth-popup' } & (
      }
 );
 
-export type PopupSuccess = {
+export type PopupSuccess<D = unknown> = {
    credentials: UrlQueryParams;
-   data?: unknown;
+   data?: D;
 } & UrlNamedParams;
 
-export type PopupError = {
-   errorCode: string;
-   error?: object;
-} & Partial<UrlNamedParams>;
+export type PopupError<E = unknown> = Partial<UrlNamedParams> &
+   (
+      | {
+           code: Extract<OAuthErrorCodes, 'OAuth Failure Response'>;
+           details: {
+              error: string;
+              error_description?: string;
+              error_uri?: string;
+           } & Partial<UrlQueryParams>;
+        }
+      | {
+           code: Extract<OAuthErrorCodes, 'Callback Error'>;
+           details: E;
+        }
+      | {
+           code: Exclude<OAuthErrorCodes, 'OAuth Failure Response' | 'Callback Error'>;
+           details: undefined;
+        }
+   );
+
+export type OAuthErrorCodes = (typeof errors)[keyof typeof errors];
 
 export { CustomTypeOptions } from './options';
 

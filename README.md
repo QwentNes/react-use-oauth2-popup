@@ -17,8 +17,8 @@ First, you need to create configurations for OAuth2 using `OAuthParams` and pass
 ### Example:
 
 ```jsx
-import { OAuthParams, OAuthProvider } from 'react-use-oauth2-popup'
-import { createBrowserRouter, RouterProvider } from 'react-router-dom'
+import { OAuthParams, OAuthProvider } from 'react-use-oauth2-popup';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
 const params = new OAuthParams({
   redirectUri: 'external/:provider/:method',
@@ -33,16 +33,18 @@ const params = new OAuthParams({
       popup: {
         height: 600,
         width: 450
-      },
+      }
     },
     discord: {
-      base_path: 'https://discord.com/oauth2/authorize',
-      client_id: process.env.discord_client_id,
-      response_type: 'code',
-      scope: 'identify'
-    },
-  },
-})
+       url: {
+         base_path: 'https://discord.com/oauth2/authorize',
+         client_id: process.env.discord_client_id,
+         response_type: 'code',
+         scope: 'identify'
+       }
+    }
+  }
+});
 
 const router = createBrowserRouter([
   {
@@ -53,15 +55,15 @@ const router = createBrowserRouter([
     path: 'external/:provider/:method',
     element: <PopupPage />
   }
-])
+]);
 
 const App = () => {
   return (
     <OAuthProvider params={params}>
       <RouterProvider router={router} />
     </OAuthProvider>
-  )
-}
+  );
+};
 ```
 ### Options:
 
@@ -176,15 +178,14 @@ const {
       * Can return a promise which will resolve the data (`activeProvider` will not change value to `null`, until the promise is resolved)
       * The `data` value contains the result of execution from the corresponding handler from `useOAuthPopup`
       * The `credentials` value contains all the parameters returned by the provider
-    * `onError?: ({ provider: string, method: string, errorCode: string, error?: TError }) => void`
+    * `onError?: ({ provider: string, method: string, code: string, details?: TError }) => void`
       * Optional
       * This function will fire when an error occurs during the process
-      * The `error` is not empty only if the error was returned by the handler from the `useOAuthPopup` hook or if the provider returned an error.
-      * `errorCode` will be
+      * The `details` is not empty only if the error was returned by the handler from the `useOAuthPopup` hook or if the provider returned an error.
+      * `code` will be
         * ***State Mismatch*** - The state value returned after receiving the credentials does not match
         * ***Callback Error*** - The function passed to process the method in the `useOAuthPopup` hook failed with an error
         * ***Invalid Parameters*** - An invalid `provider` is specified or an error has been made in `redirect_uri`
-        * ***Callback Not Found*** - The `useOAuthPopup` hook does not have a handler for this method or a default handler
         * ***FailureResponse*** - The `provider` returned an error
     * `onOpen?: () => void`
       * Optional

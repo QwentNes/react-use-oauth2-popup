@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
    CallbackError,
-   CallbackNotFound,
    FailureResponse,
    InvalidParameters,
    StateMismatch
@@ -13,6 +12,7 @@ import {
    Method,
    MethodHandler,
    MethodHandlers,
+   OAuthErrorCodes,
    PopupConfig,
    PopupError,
    UrlNamedParams
@@ -38,8 +38,8 @@ function useOAuthPopup(handlers: MethodHandlers, config?: Partial<PopupConfig>) 
       return parseUrl(window.location.href, getRedirectUrlPattern());
    }
 
-   function createError(errorCode: string, error?: object): PopupError {
-      return { errorCode, error };
+   function createError<C extends OAuthErrorCodes>(code: C, details?: unknown) {
+      return { code, details };
    }
 
    function getCallback(method: Method) {
@@ -49,7 +49,7 @@ function useOAuthPopup(handlers: MethodHandlers, config?: Partial<PopupConfig>) 
          : handlers;
 
       if (!callback) {
-         throw createError(CallbackNotFound);
+         throw Error(`No handler or default handler was found for method ${method}`);
       }
 
       return (config: HandlerData) => Promise.resolve(callback(config));
@@ -67,12 +67,12 @@ function useOAuthPopup(handlers: MethodHandlers, config?: Partial<PopupConfig>) 
    function checkParams({ namedParams, queryParams }: ReturnType<typeof parseUrl>) {
       const { state, error } = queryParams;
       const { provider, method } = namedParams;
-      checkState(state);
 
       if (error) {
          throw createError(FailureResponse, queryParams);
       }
 
+      checkState(state);
       if (![provider, method, state].every(Boolean)) {
          throw createError(InvalidParameters);
       }
@@ -117,7 +117,7 @@ function useOAuthPopup(handlers: MethodHandlers, config?: Partial<PopupConfig>) 
       } catch (_error) {
          setStatus(PopupStatus.error);
          const error = _error as PopupError;
-         if (error?.errorCode) {
+         if (error?.code) {
             return sendResponse(error);
          }
          throw error;
