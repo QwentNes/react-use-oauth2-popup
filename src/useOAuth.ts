@@ -34,6 +34,7 @@ export function useOAuth<D = unknown, E = unknown>(
          },
          onError(error) {
             resetPopupRef();
+            setActiveProvider(null);
             events?.onError?.(error);
          },
          onOpen(provider) {
