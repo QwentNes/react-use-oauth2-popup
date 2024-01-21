@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { v4 as uuid_v4 } from 'uuid';
 import createPopup from './lib/createPopup';
 import { useOAuthContext } from './OAuthProvider';
 import {
@@ -14,11 +15,9 @@ export function useOAuth<D = unknown, E = unknown>(
    events?: Partial<AuthEventHandlers<D, E>>
 ) {
    const popupRef = useRef<Window | null>(null);
-   const { createWindowParams, generateString } = useOAuthContext();
-   const { onOpen, onClose, onSuccess, onError } = getEventHandlers();
+   const { createWindowParams } = useOAuthContext();
    const [activeProvider, setActiveProvider] = useState<Provider | null>(null);
-
-   function getEventHandlers(): AuthEventHandlers<D, E> {
+   const { onOpen, onClose, onSuccess, onError } = ((): AuthEventHandlers<D, E> => {
       function resetPopupRef() {
          popupRef.current?.close();
          popupRef.current = null;
@@ -47,10 +46,10 @@ export function useOAuth<D = unknown, E = unknown>(
             events?.onClose?.();
          }
       };
-   }
+   })();
 
    function generateState() {
-      const randomString = generateString();
+      const randomString = uuid_v4().replace(/-/g, '');
       window.localStorage.setItem('oauth-state', randomString);
 
       return randomString;

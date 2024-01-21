@@ -1,6 +1,6 @@
 import { UrlNamedParams, UrlQueryParams } from '../types';
 
-const parseUrl = (urlValue: string, urlPattern: string) => {
+const parseUrl = (urlValue: string, uriPattern: string) => {
    const urlBase = new URL(urlValue);
 
    function hash() {
@@ -26,7 +26,7 @@ const parseUrl = (urlValue: string, urlPattern: string) => {
    }
 
    function namedParamsWithIndex() {
-      const namedUrlParams = getPathNames(urlPattern);
+      const namedUrlParams = getPathNames(uriPattern);
 
       return namedUrlParams.reduce<{ value: string; index: number }[]>(
          (validParams, param, index) => {

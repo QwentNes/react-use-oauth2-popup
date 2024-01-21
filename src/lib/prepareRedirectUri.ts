@@ -1,6 +1,6 @@
-import { Method, Provider } from '../types';
+import { Method, Provider, RedirectUriParams } from '../types';
 
-function createRedirectUrl(pattern: string, provider: Provider, method: Method): string {
+function prepareRedirectUri(pattern: string): RedirectUriParams {
    const segments = pattern.split('/');
    const providerIndex = segments.findIndex((segment) => segment === ':provider');
    const methodIndex = segments.findIndex((segment) => segment === ':method');
@@ -11,10 +11,14 @@ function createRedirectUrl(pattern: string, provider: Provider, method: Method):
       );
    }
 
-   segments[providerIndex] = provider;
-   segments[methodIndex] = method;
-
-   return new URL(segments.join('/'), window.location.origin).toString();
+   return {
+      pattern,
+      create: (provider: Provider, method: Method) => {
+         segments[providerIndex] = provider;
+         segments[methodIndex] = method;
+         return new URL(segments.join('/'), window.location.origin).toString();
+      }
+   };
 }
 
-export default createRedirectUrl;
+export default prepareRedirectUri;

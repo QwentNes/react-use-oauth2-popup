@@ -1,9 +1,9 @@
 import { JSX, ReactNode } from 'react';
+import * as errors from '../constants/errors';
 import templates from '../constants/templates';
 import { OAuthParams } from '../OAuthParams';
 import { PreservedValue } from './helpers';
 import { OAuthHookTypes } from './options';
-import * as errors from '../constants/errors';
 
 export type Provider = PreservedValue<OAuthHookTypes['provider'], string>;
 export type Method = PreservedValue<OAuthHookTypes['method'], string>;
@@ -16,16 +16,14 @@ export type OAuthContextProvider = (props: {
 type OAuthTemplates = typeof templates;
 
 export type OAuthParamsConfig =
-   | ((templates: OAuthTemplates) => {
-        redirectUri: string;
-        providers: ProvidersParams;
-     })
-   | {
-        redirectUri: string;
-        providers: ProvidersParams;
-     };
+   | ((templates: OAuthTemplates) => ProvidersParams)
+   | ProvidersParams;
 
 export type ProvidersParams = Record<Provider, ProviderParams>;
+export type RedirectUriParams = {
+   pattern: string;
+   create: (provider: Provider, method: Method) => string;
+};
 
 export type ProviderParams = {
    url:
@@ -96,14 +94,14 @@ export type UrlQueryParams = {
    state: string;
 } & Record<string, string>;
 
-export type PopupEventResponse = { source: 'oauth-popup' } & (
+export type PopupEventResponse<D = unknown, E = unknown> = { source: 'oauth-popup' } & (
    | {
         result: 'success';
-        payload: PopupSuccess;
+        payload: PopupSuccess<D>;
      }
    | {
         result: 'error';
-        payload: PopupError;
+        payload: PopupError<E>;
      }
 );
 
@@ -115,7 +113,7 @@ export type PopupSuccess<D = unknown> = {
 export type PopupError<E = unknown> = Partial<UrlNamedParams> &
    (
       | {
-           code: Extract<OAuthErrorCodes, 'OAuth Failure Response'>;
+           code: Extract<OAuthErrorCodes, 'Failure Response'>;
            details: {
               error: string;
               error_description?: string;
@@ -127,8 +125,7 @@ export type PopupError<E = unknown> = Partial<UrlNamedParams> &
            details: E;
         }
       | {
-           code: Exclude<OAuthErrorCodes, 'OAuth Failure Response' | 'Callback Error'>;
-           details: undefined;
+           code: Exclude<OAuthErrorCodes, 'Failure Response' | 'Callback Error'>;
         }
    );
 

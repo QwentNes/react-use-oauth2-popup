@@ -27,7 +27,7 @@ enum PopupStatus {
 
 function useOAuthPopup(handlers: MethodHandlers, config?: Partial<PopupConfig>) {
    const [status, setStatus] = useState<PopupStatus>(PopupStatus.idle);
-   const { getRedirectUrlPattern } = useOAuthContext();
+   const { getRedirectUriPattern } = useOAuthContext();
    const _config: PopupConfig = {
       delayClose: 0,
       directAccessHandler: () => window.location.assign(window.location.origin),
@@ -35,7 +35,7 @@ function useOAuthPopup(handlers: MethodHandlers, config?: Partial<PopupConfig>) 
    };
 
    function getParamsFromUrl() {
-      return parseUrl(window.location.href, getRedirectUrlPattern());
+      return parseUrl(window.location.href, getRedirectUriPattern());
    }
 
    function createError<C extends OAuthErrorCodes>(code: C, details?: unknown) {

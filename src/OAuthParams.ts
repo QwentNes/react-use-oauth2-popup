@@ -1,32 +1,27 @@
-import { v4 as uuid_v4 } from 'uuid';
 import templates from './constants/templates';
 import createOAuthUrl from './lib/createOAuthUrl';
-import createRedirectUrl from './lib/createRedirectUrl';
+import prepareRedirectUri from './lib/prepareRedirectUri';
 import {
    Method,
    OAuthParamsConfig,
    PopupViewParams,
    Provider,
-   ProvidersParams
+   ProvidersParams,
+   RedirectUriParams
 } from './types';
 
 export class OAuthParams {
    readonly #providers: ProvidersParams;
-   readonly #redirectUri: string;
+   readonly #redirectUri: RedirectUriParams;
 
-   constructor(params: OAuthParamsConfig) {
-      const { providers, redirectUri } =
-         typeof params === 'function' ? params(templates) : params;
-      this.#redirectUri = redirectUri;
-      this.#providers = providers;
+   constructor(redirectUriPattern: string, providers: OAuthParamsConfig) {
+      this.#redirectUri = prepareRedirectUri(redirectUriPattern);
+      this.#providers =
+         typeof providers === 'function' ? providers(templates) : providers;
    }
 
-   getRedirectUrlPattern = () => {
-      return this.#redirectUri;
-   };
-
-   generateString = () => {
-      return uuid_v4().replace(/-/g, '');
+   getRedirectUriPattern = () => {
+      return this.#redirectUri.pattern;
    };
 
    getProvider = (provider: Provider) => {
@@ -38,42 +33,32 @@ export class OAuthParams {
       return data;
    };
 
-   getOAuthUrlFn = (provider: Provider) => {
-      const { url } = this.getProvider(provider);
-
-      if (typeof url === 'function') {
-         return url;
-      }
-      const { base_path, ...urlParams } = url;
-
-      return (redirect_uri: string, state: string) =>
-         createOAuthUrl(base_path, {
-            redirect_uri,
-            state,
-            ...urlParams
-         });
-   };
-
    createWindowParams = (
       state: string,
       provider: Provider,
       method: Method,
       popupParams?: PopupViewParams
    ) => {
-      const { popup } = this.getProvider(provider);
-      const redirectUrl = createRedirectUrl(
-         this.getRedirectUrlPattern(),
-         provider,
-         method
-      );
+      const { popup, url } = this.getProvider(provider);
+      const redirectUrl = this.#redirectUri.create(provider, method);
+
+      let oauthUrl;
+      if (typeof url === 'function') {
+         oauthUrl = url;
+      } else {
+         const { base_path, ...urlParams } = url;
+         oauthUrl = (redirect_uri: string, state: string) =>
+            createOAuthUrl(base_path, {
+               redirect_uri,
+               state,
+               ...urlParams
+            });
+      }
 
       return {
          title: `external_${method}`,
-         url: this.getOAuthUrlFn(provider)(redirectUrl, state),
-         popup: {
-            ...popup,
-            ...popupParams
-         }
+         url: oauthUrl(redirectUrl, state),
+         popup: Object.assign({}, popup, popupParams)
       };
    };
 }
