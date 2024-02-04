@@ -3,21 +3,66 @@ import { v4 as uuid_v4 } from 'uuid';
 import createPopup from './lib/createPopup';
 import { useOAuthContext } from './OAuthProvider';
 import {
-   AuthEventHandlers,
+   DefaultMappedTypes,
    Method,
+   Nullable,
+   PopupError,
    PopupEventResponse,
+   PopupSuccess,
    PopupViewParams,
    Provider
 } from './types';
 
-export function useOAuth<D = unknown, E = unknown>(
-   method: Method,
-   events?: Partial<AuthEventHandlers<D, E>>
-) {
-   const popupRef = useRef<Window | null>(null);
+interface OAuthEvents<
+   TData extends Partial<DefaultMappedTypes>,
+   TError extends Partial<DefaultMappedTypes>
+> {
+   onSuccess: (response: PopupSuccess<TData>) => Promise<void> | void;
+   onError: (error: PopupError<TError>) => void;
+   onOpen: (provider: Provider) => void;
+   onClose: VoidFunction;
+}
+
+interface OAuthReturnType<TData extends Partial<DefaultMappedTypes>> {
+   data: Nullable<PopupSuccess<TData>>;
+   activeProvider: Nullable<Provider>;
+   closePopup: VoidFunction;
+   openPopup: (provider: Provider, popupParams?: PopupViewParams) => VoidFunction;
+}
+
+function useOAuth<
+   TData extends Partial<DefaultMappedTypes> = DefaultMappedTypes,
+   TError extends Partial<DefaultMappedTypes> = DefaultMappedTypes,
+   TEvents extends Partial<OAuthEvents<TData, TError>> = Partial<
+      OAuthEvents<TData, TError>
+   >
+>(method: Method, events?: TEvents): OAuthReturnType<TData>;
+
+function useOAuth<
+   TData extends Partial<DefaultMappedTypes> = DefaultMappedTypes,
+   TError extends Partial<DefaultMappedTypes> = DefaultMappedTypes,
+   TEvents extends Partial<OAuthEvents<TData, TError>> = Partial<
+      OAuthEvents<TData, TError>
+   >
+>(events?: TEvents): OAuthReturnType<TData>;
+
+function useOAuth<
+   TData extends Partial<DefaultMappedTypes> = DefaultMappedTypes,
+   TError extends Partial<DefaultMappedTypes> = DefaultMappedTypes,
+   TEvents extends Partial<OAuthEvents<TData, TError>> = Partial<
+      OAuthEvents<TData, TError>
+   >
+>(method?: Method | TEvents, events?: TEvents): OAuthReturnType<TData> {
+   const opts = {
+      method: typeof method === 'string' ? method : 'auth',
+      events: typeof method === 'object' ? events : events
+   };
+
+   const popupRef = useRef<Nullable<Window>>(null);
    const { createWindowParams } = useOAuthContext();
-   const [activeProvider, setActiveProvider] = useState<Provider | null>(null);
-   const { onOpen, onClose, onSuccess, onError } = ((): AuthEventHandlers<D, E> => {
+   const [lastData, setLastData] = useState<Nullable<PopupSuccess<TData>>>(null);
+   const [activeProvider, setActiveProvider] = useState<Nullable<Provider>>(null);
+   const { onOpen, onClose, onSuccess, onError } = ((): OAuthEvents<TData, TError> => {
       function resetPopupRef() {
          popupRef.current?.close();
          popupRef.current = null;
@@ -26,24 +71,25 @@ export function useOAuth<D = unknown, E = unknown>(
       return {
          onSuccess(response) {
             resetPopupRef();
-            events?.onClose?.();
+            opts.events?.onClose?.();
             Promise.resolve(events?.onSuccess?.(response)).finally(() => {
                setActiveProvider(null);
+               setLastData(response);
             });
          },
          onError(error) {
             resetPopupRef();
             setActiveProvider(null);
-            events?.onError?.(error);
+            opts.events?.onError?.(error);
          },
          onOpen(provider) {
             setActiveProvider(provider);
-            events?.onOpen?.(provider);
+            opts.events?.onOpen?.(provider);
          },
          onClose() {
             resetPopupRef();
             setActiveProvider(null);
-            events?.onClose?.();
+            opts.events?.onClose?.();
          }
       };
    })();
@@ -64,7 +110,7 @@ export function useOAuth<D = unknown, E = unknown>(
          const params = createWindowParams(
             generateState(),
             provider,
-            method,
+            opts.method,
             popupParams
          );
          popupRef.current = createPopup(params);
@@ -94,7 +140,7 @@ export function useOAuth<D = unknown, E = unknown>(
 
    useEffect(() => {
       //@ts-ignore (generic error microbundle)
-      function messageHandler({ data }: MessageEvent<PopupEventResponse<D, E>>) {
+      function messageHandler({ data }: MessageEvent<PopupEventResponse<TData, TError>>) {
          const { result, payload, source } = data || {};
          if (source === 'oauth-popup') {
             result === 'success' ? onSuccess(payload) : onError(payload);
@@ -111,6 +157,9 @@ export function useOAuth<D = unknown, E = unknown>(
    return {
       closePopup,
       openPopup,
-      activeProvider
+      activeProvider,
+      data: lastData
    };
 }
+
+export { useOAuth };

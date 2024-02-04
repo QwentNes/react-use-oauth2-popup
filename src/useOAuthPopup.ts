@@ -116,7 +116,7 @@ function useOAuthPopup(handlers: MethodHandlers, config?: Partial<PopupConfig>) 
             });
       } catch (_error) {
          setStatus(PopupStatus.error);
-         const error = _error as PopupError;
+         const error = _error as PopupError<never>;
          if (error?.code) {
             return sendResponse(error);
          }

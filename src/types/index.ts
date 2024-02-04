@@ -1,19 +1,20 @@
 import { JSX, ReactNode } from 'react';
-import * as errors from '../constants/errors';
+import * as errorCodes from '../constants/errors';
 import templates from '../constants/templates';
 import { OAuthParams } from '../OAuthParams';
 import { PreservedValue } from './helpers';
 import { OAuthHookTypes } from './options';
 
-export type Provider = PreservedValue<OAuthHookTypes['provider'], string>;
 export type Method = PreservedValue<OAuthHookTypes['method'], string>;
+export type Provider = PreservedValue<OAuthHookTypes['provider'], string>;
+export type OAuthErrorCodes = (typeof errorCodes)[keyof typeof errorCodes];
+export type DefaultMappedTypes = Record<Provider, unknown>;
+export type OAuthTemplates = typeof templates;
 
 export type OAuthContextProvider = (props: {
    children: ReactNode;
    params: OAuthParams;
 }) => JSX.Element;
-
-type OAuthTemplates = typeof templates;
 
 export type OAuthParamsConfig =
    | ((templates: OAuthTemplates) => ProvidersParams)
@@ -57,13 +58,6 @@ export type PopupViewParams = {
         };
 };
 
-export type AuthEventHandlers<D = unknown, E = unknown> = {
-   onSuccess: (response: PopupSuccess<D>) => Promise<void> | void;
-   onError: (error: PopupError<E>) => void;
-   onOpen: (provider: Provider) => void;
-   onClose: () => void;
-};
-
 export type MethodHandler = (data: HandlerData) => Promise<unknown> | unknown;
 
 export type MethodHandlers =
@@ -94,45 +88,57 @@ export type UrlQueryParams = {
    state: string;
 } & Record<string, string>;
 
-export type PopupEventResponse<D = unknown, E = unknown> = { source: 'oauth-popup' } & (
+export type PopupEventResponse<
+   TData extends Partial<DefaultMappedTypes>,
+   TError extends Partial<DefaultMappedTypes>
+> = { source: 'oauth-popup' } & (
    | {
         result: 'success';
-        payload: PopupSuccess<D>;
+        payload: PopupSuccess<TData>;
      }
    | {
         result: 'error';
-        payload: PopupError<E>;
+        payload: PopupError<TError>;
      }
 );
 
-export type PopupSuccess<D = unknown> = {
+export type PopupError<TError extends Partial<DefaultMappedTypes>> =
+   | (Partial<UrlNamedParams> &
+        (
+           | {
+                code: Extract<OAuthErrorCodes, 'Failure Response'>;
+                details: {
+                   error: string;
+                   error_description?: string;
+                   error_uri?: string;
+                } & Partial<UrlQueryParams>;
+             }
+           | {
+                code: Exclude<OAuthErrorCodes, 'Failure Response' | 'Callback Error'>;
+             }
+        ))
+   | ({
+        method: Method;
+        code: Extract<OAuthErrorCodes, 'Callback Error'>;
+     } & {
+        [K in keyof DefaultMappedTypes]: {
+           provider: K;
+           details: TError[K] extends never ? unknown : TError[K];
+        };
+     }[keyof DefaultMappedTypes]);
+
+export type PopupSuccess<TData extends Partial<DefaultMappedTypes>> = {
+   [P in keyof DefaultMappedTypes]: {
+      provider: P;
+      details: TData[P] extends never ? unknown : TData[P];
+   };
+}[keyof DefaultMappedTypes] & {
    credentials: UrlQueryParams;
-   data?: D;
-} & UrlNamedParams;
+   method: Method;
+};
 
-export type PopupError<E = unknown> = Partial<UrlNamedParams> &
-   (
-      | {
-           code: Extract<OAuthErrorCodes, 'Failure Response'>;
-           details: {
-              error: string;
-              error_description?: string;
-              error_uri?: string;
-           } & Partial<UrlQueryParams>;
-        }
-      | {
-           code: Extract<OAuthErrorCodes, 'Callback Error'>;
-           details: E;
-        }
-      | {
-           code: Exclude<OAuthErrorCodes, 'Failure Response' | 'Callback Error'>;
-        }
-   );
-
-export type OAuthErrorCodes = (typeof errors)[keyof typeof errors];
-
+export { Nullable } from './helpers';
 export { CustomTypeOptions } from './options';
-
 export {
    DiscordArgs,
    GitHubArgs,
