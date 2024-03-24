@@ -1,4 +1,5 @@
 import { PopupParams } from '../types';
+import Helpers from './helpers';
 
 function createPopup({
    url,
@@ -10,7 +11,7 @@ function createPopup({
    let top = window.screenY + (window.outerHeight - height) / 2.5;
    let left = window.screenX + (window.outerWidth - width) / 2;
 
-   if (typeof position === 'object') {
+   if (Helpers.IsObject(position)) {
       top = position?.topOffset || top;
       left = position?.leftOffset || left;
    }

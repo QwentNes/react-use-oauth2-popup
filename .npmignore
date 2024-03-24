@@ -2,3 +2,4 @@
 !dist/*
 !dist/constants/*
 !dist/types/*
+!dist/lib/*

@@ -1,6 +1,6 @@
 {
   "name": "react-use-oauth2-popup",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Simplifies working with OAuth2 for react application",
   "main": "dist/react-use-oauth2-popup.js",
   "module": "dist/react-use-oauth2-popup.esm.js",

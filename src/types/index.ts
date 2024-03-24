@@ -1,26 +1,41 @@
 import { JSX, ReactNode } from 'react';
-import * as errorCodes from '../constants/errors';
+import { ErrorCodes, SOURCE_KEY } from '../constants/common';
 import templates from '../constants/templates';
-import { OAuthParams } from '../OAuthParams';
+import { OAuthParams } from '../OAuthProvider';
 import { PreservedValue } from './helpers';
 import { OAuthHookTypes } from './options';
 
 export type Method = PreservedValue<OAuthHookTypes['method'], string>;
 export type Provider = PreservedValue<OAuthHookTypes['provider'], string>;
-export type OAuthErrorCodes = (typeof errorCodes)[keyof typeof errorCodes];
+export type OAuthErrorCodes = (typeof ErrorCodes)[keyof typeof ErrorCodes];
 export type DefaultMappedTypes = Record<Provider, unknown>;
 export type OAuthTemplates = typeof templates;
 
-export type OAuthContextProvider = (props: {
+export enum PopupStatus {
+   idle = 'idle',
+   running = 'running',
+   success = 'success',
+   error = 'error'
+}
+
+export enum OAuthStatus {
+   success = 'success',
+   error = 'error'
+}
+
+export type OAuthContextProviderProps = {
    children: ReactNode;
    params: OAuthParams;
-}) => JSX.Element;
+};
+
+export type OAuthContextProvider = (props: OAuthContextProviderProps) => JSX.Element;
 
 export type OAuthParamsConfig =
    | ((templates: OAuthTemplates) => ProvidersParams)
    | ProvidersParams;
 
 export type ProvidersParams = Record<Provider, ProviderParams>;
+
 export type RedirectUriParams = {
    pattern: string;
    create: (provider: Provider, method: Method) => string;
@@ -61,7 +76,6 @@ export type PopupViewParams = {
 export type MethodHandler = (data: HandlerData) => Promise<unknown> | unknown;
 
 export type MethodHandlers =
-   | MethodHandler
    | {
         [key in Method]: MethodHandler;
      }
@@ -72,11 +86,6 @@ export type MethodHandlers =
 export type HandlerData = {
    credentials: UrlQueryParams;
 } & UrlNamedParams;
-
-export type PopupConfig = {
-   directAccessHandler: () => void;
-   delayClose: number;
-};
 
 export type UrlNamedParams = {
    provider: Provider;
@@ -91,13 +100,13 @@ export type UrlQueryParams = {
 export type PopupEventResponse<
    TData extends Partial<DefaultMappedTypes>,
    TError extends Partial<DefaultMappedTypes>
-> = { source: 'oauth-popup' } & (
+> = { source: typeof SOURCE_KEY } & (
    | {
-        result: 'success';
+        result: OAuthStatus.success;
         payload: PopupSuccess<TData>;
      }
    | {
-        result: 'error';
+        result: OAuthStatus.error;
         payload: PopupError<TError>;
      }
 );
@@ -123,14 +132,14 @@ export type PopupError<TError extends Partial<DefaultMappedTypes>> =
      } & {
         [K in keyof DefaultMappedTypes]: {
            provider: K;
-           details: TError[K] extends never ? unknown : TError[K];
+           details: PreservedValue<TError[K], unknown>;
         };
      }[keyof DefaultMappedTypes]);
 
 export type PopupSuccess<TData extends Partial<DefaultMappedTypes>> = {
    [P in keyof DefaultMappedTypes]: {
       provider: P;
-      details: TData[P] extends never ? unknown : TData[P];
+      details: PreservedValue<TData[P], unknown>;
    };
 }[keyof DefaultMappedTypes] & {
    credentials: UrlQueryParams;

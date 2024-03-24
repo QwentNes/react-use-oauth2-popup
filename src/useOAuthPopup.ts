@@ -1,10 +1,6 @@
 import { useEffect, useState } from 'react';
-import {
-   CallbackError,
-   FailureResponse,
-   InvalidParameters,
-   StateMismatch
-} from './constants/errors';
+import { ErrorCodes, SOURCE_KEY, STORAGE_STATE_KEY } from './constants/common';
+import Helpers from './lib/helpers';
 import parseUrl from './lib/parseUrl';
 import { useOAuthContext } from './OAuthProvider';
 import {
@@ -13,19 +9,210 @@ import {
    MethodHandler,
    MethodHandlers,
    OAuthErrorCodes,
-   PopupConfig,
+   OAuthStatus,
    PopupError,
+   PopupStatus,
    UrlNamedParams
 } from './types';
 
-enum PopupStatus {
-   idle = 'idle',
-   running = 'running',
-   success = 'success',
-   error = 'error'
-}
+type PopupConfig = {
+   /**
+    * This function will fire when the page is opened manually
+    *
+    * Default: Redirects the user to the main page
+    *
+    * ```tsx
+    *    () => window.location.assign(window.location.origin)
+    * ```
+    * */
+   directAccessHandler: VoidFunction;
 
-function useOAuthPopup(handlers: MethodHandlers, config?: Partial<PopupConfig>) {
+   /**
+    * Allows you to set the delay in milliseconds for closing the popup
+    *
+    * Works in all cases (success, error)
+    *
+    * It may be useful to display an animation after the authorization process is completed
+    *
+    * Default: 0ms
+    * */
+   delayClose: number;
+};
+
+type OAuthPopupReturnType = {
+   /**
+    * Displays the status of the popup
+    *
+    * Will be
+    * - `idle` initial state. Does not change if the page is opened manually
+    * - `running` if it processes the received data
+    * - `success` if the data has been processed successfully
+    * - `error` if the data has been processed unsuccessfully
+    * */
+   status: PopupStatus;
+
+   /**
+    * A derived boolean from the status variable above, provided for convenience
+    * */
+   isIdle: boolean;
+
+   /**
+    * A derived boolean from the status variable above, provided for convenience
+    * */
+   isRunning: boolean;
+
+   /**
+    * A derived boolean from the status variable above, provided for convenience
+    * */
+   isError: boolean;
+
+   /**
+    * A derived boolean from the status variable above, provided for convenience
+    * */
+   isSuccess: boolean;
+};
+
+/**
+ * The hook should be called on the page specified in the `redirectUri`
+ *
+ * After receiving the credentials from the provider, this page will be
+ * opened and the appropriate handler method will be called
+ *
+ * After processing the data, the popup will be closed automatically, even if an error occurs
+ *
+ * If you want to use **one** handler for all methods, then just pass the function as the first argument
+ *
+ * ```tsx
+ *
+ * import { useOAuthPopup } from 'react-use-oauth2-popup'
+ *
+ * const PopupPage = () => {
+ *    const { isSuccess, isError } = useOAuthPopup(
+ *       async ({ provider, credentials }) => {
+ *          const res = await fetch(`example.com/${provider}/auth`, {
+ *             method: 'POST',
+ *             body: JSON.stringify(credentials)
+ *          });
+ *          return res.json();
+ *       });
+ *
+ *    if (isSuccess) {
+ *       return <SuccessIcon / >
+ *    }
+ *
+ *    if (isError) {
+ *       return <ErrorIcon / >
+ *    }
+ *
+ *    return <LoaderIcon / >
+ * };
+ *
+ * ```
+ *
+ * *Recommendation: use handlers to send `credentials` to the server*
+ * */
+function useOAuthPopup(
+   handlers: MethodHandler,
+   config?: Partial<PopupConfig>
+): OAuthPopupReturnType;
+
+/**
+ * The hook should be called on the page specified in the "redirectUri"
+ *
+ * After receiving the credentials from the provider, this page will be
+ * opened and the appropriate handler method will be called
+ *
+ * After processing the data, the popup will be closed automatically, even if an error occurs
+ *
+ * If you want to use separate handlers for each method, pass an object with the method name
+ * and its corresponding processing function
+ *
+ * For **example**, in our application, the `useOAuth` hook is called twice,
+ * for authorization and connection. We want to separate the logic by using different handlers.
+ *
+ * ```tsx
+ *
+ * import { useOAuthPopup } from 'react-use-oauth2-popup'
+ *
+ * const PopupPage = () => {
+ *    const { isSuccess, isError } = useOAuthPopup({
+ *       async auth(data) {
+ *          const res = await fetch(`example.com/auth`, {
+ *             method: 'POST',
+ *             body: JSON.stringify(data)
+ *          });
+ *          return res.json();
+ *       },
+ *       async connect({ credentials }) {
+ *          const res = await fetch(`example.com/connect`, {
+ *             method: 'POST',
+ *             body: JSON.stringify(credentials)
+ *          });
+ *          return res.json();
+ *       }
+ *    });
+ *
+ *    if (isSuccess) {
+ *       return <SuccessIcon / >
+ *    }
+ *
+ *    if (isError) {
+ *       return <ErrorIcon / >
+ *    }
+ *
+ *    return <LoaderIcon / >
+ * };
+ *
+ * ```
+ *
+ * You can also specify the default handler.
+ *
+ * If no handler is defined for a particular method, `default` will be called
+ *
+ * **Important!** If you do not specify the `method` name for `useOAuth`, the `default` handler is required
+ *
+ * ```tsx
+ *
+ * import { useOAuthPopup } from 'react-use-oauth2-popup'
+ *
+ * const PopupPage = () => {
+ *    const { isSuccess, isError } = useOAuthPopup({
+ *       async auth(data) {
+ *          const res = await fetch(`example.com/auth`, {
+ *             method: 'POST',
+ *             body: JSON.stringify(data)
+ *          });
+ *          return res.json();
+ *       },
+ *       default(data){
+ *          // default logic...
+ *       }
+ *    });
+ *
+ *    if (isSuccess) {
+ *       return <SuccessIcon / >
+ *    }
+ *
+ *    if (isError) {
+ *       return <ErrorIcon / >
+ *    }
+ *
+ *    return <LoaderIcon / >
+ * };
+ *
+ * ```
+ *
+ * *Recommendation: use handlers to send `credentials` to the server*
+ * */
+function useOAuthPopup(
+   handlers: MethodHandlers,
+   config?: Partial<PopupConfig>
+): OAuthPopupReturnType;
+
+function useOAuthPopup(
+   handlers: MethodHandler | MethodHandlers,
+   config?: Partial<PopupConfig>
+): OAuthPopupReturnType {
    const [status, setStatus] = useState<PopupStatus>(PopupStatus.idle);
    const { getRedirectUriPattern } = useOAuthContext();
    const _config: PopupConfig = {
@@ -43,12 +230,11 @@ function useOAuthPopup(handlers: MethodHandlers, config?: Partial<PopupConfig>) 
    }
 
    function getCallback(method: Method) {
-      // prettier-ignore
-      const callback: MethodHandler = typeof handlers === 'object'
-         ? handlers[method] || handlers['default']
-         : handlers;
+      const callback = Helpers.IsFunction<MethodHandler>(handlers)
+         ? handlers
+         : handlers[method] || handlers['default'];
 
-      if (!callback) {
+      if (!callback || !Helpers.IsFunction(callback)) {
          throw Error(`No handler or default handler was found for method ${method}`);
       }
 
@@ -56,11 +242,11 @@ function useOAuthPopup(handlers: MethodHandlers, config?: Partial<PopupConfig>) 
    }
 
    function checkState(state: string) {
-      const localState = window.localStorage.getItem('oauth-state');
-      window.localStorage.removeItem('oauth-state');
+      const localState = window.localStorage.getItem(STORAGE_STATE_KEY);
+      window.localStorage.removeItem(STORAGE_STATE_KEY);
 
       if (state !== localState) {
-         throw createError(StateMismatch);
+         throw createError(ErrorCodes.StateMismatch);
       }
    }
 
@@ -69,22 +255,22 @@ function useOAuthPopup(handlers: MethodHandlers, config?: Partial<PopupConfig>) 
       const { provider, method } = namedParams;
 
       if (error) {
-         throw createError(FailureResponse, queryParams);
+         throw createError(ErrorCodes.FailureResponse, queryParams);
       }
 
       checkState(state);
-      if (![provider, method, state].every(Boolean)) {
-         throw createError(InvalidParameters);
+      if (!Helpers.AllDefined(provider, method, state)) {
+         throw createError(ErrorCodes.InvalidParameters);
       }
    }
 
    function postMessage(this: UrlNamedParams, payload: object) {
       const message = {
-         source: 'oauth-popup',
-         result: Object.prototype.hasOwnProperty.call(payload, 'data')
-            ? 'success'
-            : 'error',
-         payload: Object.assign({}, this, payload)
+         source: SOURCE_KEY,
+         payload: Object.assign({}, this, payload),
+         result: Helpers.IsContainsField(payload, 'data')
+            ? OAuthStatus.success
+            : OAuthStatus.error
       };
 
       const send = () => window.opener.postMessage(message, location.origin);
@@ -112,11 +298,11 @@ function useOAuthPopup(handlers: MethodHandlers, config?: Partial<PopupConfig>) 
             })
             .catch((error) => {
                setStatus(PopupStatus.error);
-               sendResponse(createError(CallbackError, error));
+               sendResponse(createError(ErrorCodes.CallbackError, error));
             });
       } catch (_error) {
          setStatus(PopupStatus.error);
-         const error = _error as PopupError<never>;
+         const error = <PopupError<never>>_error;
          if (error?.code) {
             return sendResponse(error);
          }

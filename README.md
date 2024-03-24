@@ -160,7 +160,7 @@ const {
   openPopup,
   closePopup,
   activeProvider
-} = useOAuth(method, events?)
+} = useOAuth(method?, events?)
 ```
 
 ### Options:
@@ -185,7 +185,7 @@ const {
 				* ***Callback Error*** - The function passed to process the method in the `useOAuthPopup` hook failed with an error
 				* ***Invalid Parameters*** - An invalid `provider` is specified or an error has been made in `redirect_uri`
 				* ***Failure Response*** - The `provider` returned an error
-		* `onOpen?: () => void`
+		* `onOpen?: (provider: Privider) => void`
 			* Optional
 			* This function will fire when a popup opens
 		* `onClose?: () => void`
@@ -205,7 +205,7 @@ const {
 ### Example:
 
 ```jsx
-import { useOAuth, errorCodes } from 'react-use-oauth2-popup';
+import { useOAuth, ErrorCodes } from 'react-use-oauth2-popup';
 import { redirect } from 'react-router-dom';
 
 const LoginPage = () => {
@@ -215,7 +215,7 @@ const LoginPage = () => {
       },
       onError: (error) => {
          switch(error.code){
-            case errorCodes.StateMismatch:
+            case ErrorCodes.StateMismatch:
             //notification: try again
          }
       }
@@ -286,7 +286,7 @@ const {
 import { useOAuthPopup } from 'react-use-oauth2-popup'
 
 const PopupPage = () => {
-  const { isRunning, isSuccess, isError } = useOAuthPopup({
+  const { isSuccess, isError } = useOAuthPopup({
     login: async ({ credentials }) => {
       const res = await fetch('example.com/login', {
         method: 'post',
@@ -313,7 +313,10 @@ const PopupPage = () => {
 
 ___
 ## TypeScript
-Typescript definitions can be extended to explicitly specify a list of providers and methods. Create an `oauth.d.ts`, for example:
+To strictly specify the lists of available `methods` and `providers`,
+use the extension of the definition of `CustomTypeOptions` 
+
+Create an `oauth.d.ts`, for example:
 
 ```ts
 // import the original type declarations
@@ -328,15 +331,22 @@ declare module 'react-use-oauth2-popup' {
 }
 ```
 
-You can also specify the types for the `useOAuth` hook
+To enhance the typing of the returned values for details in both
+`success` and `error` cases, it is recommended to use generics
 
-```ts
-import { useOAuth } from 'react-use-oauth2-popup'
 
-const {
-   openPopup,
-   closePopup,
-   activeProvider
-} = useOAuth<TData, TError>(method, events?)
+```tsx
+import { useOAuth } from 'react-use-oauth2-popup';
+import { DiscordSuccess, GoogleSuccess, DiscordError, GoogleError } from 'types'
 
-```
+type Success = {
+   discord: DiscordSuccess;
+   google: GoogleSuccess;
+};
+
+type Error = {
+   discord: DiscordError,
+   google: GoogleError
+}
+
+useOAuth<Success, Error>()

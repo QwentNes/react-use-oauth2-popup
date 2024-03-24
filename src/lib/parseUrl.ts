@@ -43,7 +43,7 @@ const parseUrl = (urlValue: string, uriPattern: string) => {
       const params: Record<string, string> = {};
       let source: URLSearchParams;
 
-      if (!(searchParams() as any).size) {
+      if (!(<any>searchParams()).size) {
          params['from'] = 'hash';
          source = new URLSearchParams(hash());
       } else {

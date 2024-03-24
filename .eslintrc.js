@@ -28,7 +28,7 @@ module.exports = {
    },
    plugins: ['@typescript-eslint', 'react'],
    rules: {
-      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/ban-ts-comment': 'warn',
       'react/prop-types': 'off',
       'prettier/prettier': 'warn'

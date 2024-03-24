@@ -1,6 +1,5 @@
 export * from './types';
-export { OAuthProvider } from './OAuthProvider';
+export { OAuthParams, OAuthProvider } from './OAuthProvider';
 export { useOAuth } from './useOAuth';
 export { useOAuthPopup } from './useOAuthPopup';
-export { OAuthParams } from './OAuthParams';
-export * as errorCodes from './constants/errors';
+export { ErrorCodes } from './constants/common';
